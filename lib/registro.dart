@@ -139,9 +139,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       // 🔑 Truco: usamos el DNI como "usuario interno" para Supabase Auth.
-      // El email es solo un identificador invisible; el usuario nunca lo ve.
       final String internalEmail = '${_dniController.text}@gmail.com';
 
+      // 1. Crear la cuenta en Supabase Auth
       final response = await Supabase.instance.client.auth.signUp(
         email: internalEmail,
         password: _passwordController.text,
@@ -158,23 +158,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
         throw Exception('No se pudo crear la cuenta');
       }
 
-      // Éxito → notificar y enviar al login
+      // 2. 🔥 Login automático después del registro
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: internalEmail,
+        password: _passwordController.text,
+      );
+
+      // 3. Extraer el primer nombre para mostrarlo en la app
+      final String primerNombre = _namesController.text.trim().isNotEmpty
+          ? _namesController.text.trim().split(' ')[0]
+          : 'Usuario';
+
+      // 4. Navegar directo a configurar el círculo de confianza
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ ¡Cuenta creada! Ahora inicia sesión con tu DNI.'),
+            content: Text('✅ ¡Cuenta creada! Ahora agrega tus contactos.'),
             backgroundColor: Color(0xFF007A78),
             duration: Duration(seconds: 3),
           ),
         );
+
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (context) => CirculoConfigScreen(userName: primerNombre),
+          ),
           (route) => false,
         );
       }
     } on AuthException catch (e) {
-      // Error específico de Supabase (ej: DNI ya registrado)
       String mensaje = e.message;
       if (e.message.contains('already registered') ||
           e.message.contains('already been registered')) {

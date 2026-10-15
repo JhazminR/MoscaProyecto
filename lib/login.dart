@@ -19,58 +19,89 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _login() async {
-  if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
 
-  // Mostrar estado de carga
-  setState(() => _isLoading = true);
+    try {
+      final String internalEmail = '${_dniController.text}@gmail.com';
 
-  try {
-    final String internalEmail = '${_dniController.text}@gmail.com';
-
-    final response = await Supabase.instance.client.auth.signInWithPassword(
-      email: internalEmail,
-      password: _passwordController.text,
-    );
-
-    if (response.user != null && mounted) {
-      // 🔑 Extraer nombre desde metadata (con fallbacks)
-      final metadata = response.user!.userMetadata ?? {};
-      
-      // Intentar varios campos por si los nombres están en otro lugar
-      final String nombre = 
-          metadata['nombres']?.toString() ??
-          metadata['nombre']?.toString() ??
-          metadata['name']?.toString() ??
-          (response.user!.email?.split('@').first ?? 'Usuario');
-
-      // Tomar solo el primer nombre
-      final String primerNombre = nombre.contains(' ') 
-          ? nombre.split(' ').first 
-          : nombre;
-
-      print('✅ Login OK. Nombre mostrado: $primerNombre');
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CirculoConfigScreen(userName: primerNombre),
-        ),
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: internalEmail,
+        password: _passwordController.text,
       );
-    }
-  } on AuthException catch (e) {
-    String mensaje = e.message;
-    if (e.message.contains('Invalid login credentials')) {
-      mensaje = 'DNI o contraseña incorrectos.';
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
+
+      if (response.user == null || !mounted) return;
+
+      final user = response.user!;
+
+      // 1. Obtener nombre desde profiles (más confiable)
+      String primerNombre = 'Usuario';
+      try {
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('nombres')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        final nombreCompleto = (profile?['nombres'] ?? '').toString().trim();
+        if (nombreCompleto.isNotEmpty) {
+          primerNombre = nombreCompleto.contains(' ')
+              ? nombreCompleto.split(' ').first
+              : nombreCompleto;
+        }
+      } catch (e) {
+        print('⚠️ Error leyendo profile: $e');
+      }
+
+      // 2. Verificar si tiene contactos registrados
+      final contactos = await Supabase.instance.client
+          .from('contacts')
+          .select('id, status')
+          .eq('user_id', user.id);
+
+      final tieneContactos = contactos.isNotEmpty;
+      final tieneAlgunoAceptado = contactos.any(
+        (c) => c['status'] == 'accepted',
       );
+
+      print(
+        '✅ Login OK. Contactos: ${contactos.length}, aceptados: $tieneAlgunoAceptado',
+      );
+
+      // 3. Decidir a dónde ir
+      if (!mounted) return;
+
+      if (!tieneContactos || !tieneAlgunoAceptado) {
+        // No tiene contactos o no tiene ninguno aceptado → configurar círculo
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CirculoConfigScreen(userName: primerNombre),
+          ),
+        );
+      } else {
+        // Ya tiene contactos aceptados → ir directo al panel principal
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userName: primerNombre),
+          ),
+        );
+      }
+    } on AuthException catch (e) {
+      String mensaje = e.message;
+      if (e.message.contains('Invalid login credentials')) {
+        mensaje = 'DNI o contraseña incorrectos.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
   
   @override
   Widget build(BuildContext context) {
