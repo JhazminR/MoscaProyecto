@@ -50,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
-                    crossAxisAlignment: CrossAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'PALERMO · BUENOS AIRES',
@@ -142,7 +142,7 @@ class HomeScreen extends StatelessWidget {
                           Icon(Icons.shield_outlined, color: primaryColor),
                           SizedBox(width: 10),
                           Column(
-                            crossAxisAlignment: CrossAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Compartiendo con Mariana y Diego', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                               Text('2 autorizados · Gestionar círculo →', style: TextStyle(fontSize: 11, color: Colors.grey)),
@@ -165,7 +165,7 @@ class HomeScreen extends StatelessWidget {
                               border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: const Column(
-                              crossAxisAlignment: CrossAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
