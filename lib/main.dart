@@ -29,7 +29,7 @@ class MoscaApp extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// PANTALLA PRINCIPAL (CONTACTOS DE EMERGENCIA RÁPIDA DE TRUJILLO)
+// PANTALLA PRINCIPAL (TARJETAS VERDES DE EMERGENCIA EN CUADRÍCULA 2X2)
 // -----------------------------------------------------------------------------
 class HomeScreen extends StatelessWidget {
   final String userName;
@@ -50,10 +50,10 @@ class HomeScreen extends StatelessWidget {
 
     // Lista de contactos de emergencia solicitados
     final List<Map<String, String>> emergencias = [
-      {'nombre': 'Bomberos', 'numero': '116', 'sub': 'Emergencias e incendios'},
-      {'nombre': 'Seguridad Ciudadana', 'numero': '044298734', 'sub': 'Serenazgo Trujillo'},
-      {'nombre': 'Policía Nacional del Perú', 'numero': '105', 'sub': 'Emergencias policiales'},
-      {'nombre': 'SAMU', 'numero': '106', 'sub': 'Atención médica de urgencia'},
+      {'nombre': 'Bomberos', 'numero': '116', 'sub': 'Incendios'},
+      {'nombre': 'Seguridad Ciudadana', 'numero': '044298734', 'sub': 'Serenazgo'},
+      {'nombre': 'Policía Nacional', 'numero': '105', 'sub': 'PNP'},
+      {'nombre': 'SAMU', 'numero': '106', 'sub': 'Médica urgencia'},
     ];
 
     return Scaffold(
@@ -63,7 +63,7 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Cabecera con Nombre de Usuario y Ubicación
+              // Cabecera con Nombre de Usuario
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -89,72 +89,89 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               const Text(
                 'Contactos de Emergencia Rápida',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               const Text(
-                'Presiona el botón de llamar para comunicarte de inmediato:',
+                'Toca una tarjeta para llamar inmediatamente:',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 16),
 
-              // Lista de emergencias
+              // Cuadrícula (Grid) de 2 columnas por línea con tarjetas flotantes verdes
               Expanded(
-                child: ListView.builder(
+                child: GridView.builder(
                   itemCount: emergencias.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, // 2 por línea
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.15, // Proporción rectangular horizontal
+                  ),
                   itemBuilder: (context, index) {
                     final e = emergencias[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
-                      color: Colors.white,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE6F4F1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.phone_in_talk, color: primaryColor),
+                    return InkWell(
+                      onTap: () => _hacerLlamada(e['numero']!),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: primaryColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        title: Text(e['nombre']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text('${e['sub']} (${e['numero']})', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                        trailing: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          onPressed: () => _hacerLlamada(e['numero']!),
-                          child: const Text('Llamar', style: TextStyle(color: Colors.white)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Icon(Icons.phone_in_talk, color: Colors.white, size: 22),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    e['numero']!,
+                                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  e['nombre']!,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  e['sub']!,
+                                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     );
                   },
-                ),
-              ),
-
-              // Botón de Alerta SOS General
-              Container(
-                width: double.infinity,
-                height: 56,
-                margin: const EdgeInsets.only(top: 8),
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEF4444),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: () => _hacerLlamada('105'),
-                  icon: const Icon(Icons.warning, color: Colors.white),
-                  label: const Text(
-                    'ALERTA SOS (LLAMAR 105)',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
                 ),
               ),
             ],
