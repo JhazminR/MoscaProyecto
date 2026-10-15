@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'main.dart'; // Para navegar a la pantalla principal tras registrarse
+import 'circulo_config.dart';
+import 'login.dart'; // Para navegar a la pantalla de login
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -117,16 +119,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen(userName: _namesController.text.split(' ')[0]),
-        ),
-        (route) => false,
-      );
-    }
-  }
+      // Muestra mensaje de confirmación
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('¡Registro exitoso! Por favor inicia sesión con tu DNI y contraseña.'),
+        backgroundColor: Color(0xFF007A78),
+      ),
+    );
 
+    // Redirige a la pantalla de Login limpiando el historial de navegación
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF007A78);

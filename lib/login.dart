@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main.dart'; // Redirección al inicio
 import 'registro.dart'; // Redirección al registro
+import 'circulo_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,9 +17,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacement(
+   Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen(userName: 'Lucía')),
+        MaterialPageRoute(
+          builder: (context) => CirculoConfigScreen(
+            userName: _dniController.text.isNotEmpty ? _dniController.text : 'Usuario',
+          ),
+        ),
       );
     }
   }
