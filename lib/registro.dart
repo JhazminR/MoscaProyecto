@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'main.dart'; // Para navegar a la pantalla principal tras registrarse
 import 'circulo_config.dart';
@@ -124,39 +125,66 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  void _submitRegister() {
-    if (_formKey.currentState!.validate()) {
-      if (!_isAdult) {
-        _showDialog(
-          'Registro no permitido',
-          'Para continuar debes tener al menos 18 años.',
-        );
-        return;
+  Future<void> _submitRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!_isAdult) {
+      _showDialog(
+        'Registro no permitido',
+        'Para continuar debes tener al menos 18 años.',
+      );
+      return;
+    }
+
+    setState(() => _isLoadingDni = true);
+
+    try {
+      // 🔑 Truco: usamos el DNI como "usuario interno" para Supabase Auth.
+      // El email es solo un identificador invisible; el usuario nunca lo ve.
+      final String internalEmail = '${_dniController.text}@gmail.com';
+
+      final response = await Supabase.instance.client.auth.signUp(
+        email: internalEmail,
+        password: _passwordController.text,
+        data: {
+          'dni': _dniController.text,
+          'nombres': _namesController.text,
+          'apellidos': _lastNamesController.text,
+          'celular': '+51${_phoneController.text}',
+          'fecha_nacimiento': _selectedBirthDate?.toIso8601String(),
+        },
+      );
+
+      if (response.user == null) {
+        throw Exception('No se pudo crear la cuenta');
       }
 
-      // Extraemos el primer nombre escrito o autocompletado en el campo de nombres
-      final String primerNombre = _namesController.text.trim().isNotEmpty
-          ? _namesController.text.trim().split(' ')[0]
-          : 'Usuario';
-
-      // Muestra mensaje de confirmación
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '¡Registro exitoso! Por favor inicia sesión con tu DNI y contraseña.',
+      // Éxito → notificar y enviar al login
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ ¡Cuenta creada! Ahora inicia sesión con tu DNI.'),
+            backgroundColor: Color(0xFF007A78),
+            duration: Duration(seconds: 3),
           ),
-          backgroundColor: Color(0xFF007A78),
-        ),
-      );
-
-      // Redirige a la pantalla de Login enviando el nombre registrado
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LoginScreen(registeredName: primerNombre),
-        ),
-        (route) => false,
-      );
+        );
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } on AuthException catch (e) {
+      // Error específico de Supabase (ej: DNI ya registrado)
+      String mensaje = e.message;
+      if (e.message.contains('already registered') ||
+          e.message.contains('already been registered')) {
+        mensaje = 'Este DNI ya está registrado. Intenta iniciar sesión.';
+      }
+      _showDialog('Error de registro', mensaje);
+    } catch (e) {
+      _showDialog('Error', 'No se pudo registrar: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingDni = false);
     }
   }
 
@@ -318,7 +346,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: _submitRegister,
+                  onPressed: _isLoadingDni ? null : _submitRegister,
                   child: const Text(
                     'Registrarse',
                     style: TextStyle(color: Colors.white, fontSize: 16),

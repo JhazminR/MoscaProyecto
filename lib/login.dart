@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'main.dart'; // Redirección al inicio
 import 'registro.dart'; // Redirección al registro
 import 'circulo_config.dart';
@@ -15,24 +16,62 @@ class _LoginScreenState extends State<LoginScreen> {
   final _dniController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      // Usamos el nombre registrado si está disponible; si no, usamos un genérico o el texto del DNI
-      final String nombreParaMostrar = widget.registeredName != 'Usuario' 
-          ? widget.registeredName 
-          : 'Usuario';
-          
+  Future<void> _login() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  // Mostrar estado de carga
+  setState(() => _isLoading = true);
+
+  try {
+    final String internalEmail = '${_dniController.text}@gmail.com';
+
+    final response = await Supabase.instance.client.auth.signInWithPassword(
+      email: internalEmail,
+      password: _passwordController.text,
+    );
+
+    if (response.user != null && mounted) {
+      // 🔑 Extraer nombre desde metadata (con fallbacks)
+      final metadata = response.user!.userMetadata ?? {};
+      
+      // Intentar varios campos por si los nombres están en otro lugar
+      final String nombre = 
+          metadata['nombres']?.toString() ??
+          metadata['nombre']?.toString() ??
+          metadata['name']?.toString() ??
+          (response.user!.email?.split('@').first ?? 'Usuario');
+
+      // Tomar solo el primer nombre
+      final String primerNombre = nombre.contains(' ') 
+          ? nombre.split(' ').first 
+          : nombre;
+
+      print('✅ Login OK. Nombre mostrado: $primerNombre');
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => CirculoConfigScreen(
-            userName: nombreParaMostrar,
-          ),
+          builder: (context) => CirculoConfigScreen(userName: primerNombre),
         ),
       );
     }
+  } on AuthException catch (e) {
+    String mensaje = e.message;
+    if (e.message.contains('Invalid login credentials')) {
+      mensaje = 'DNI o contraseña incorrectos.';
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
+  
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF007A78);
