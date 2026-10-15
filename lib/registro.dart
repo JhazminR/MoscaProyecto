@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'main.dart'; // Para navegar a la pantalla principal tras registrarse
 import 'circulo_config.dart';
 import 'login.dart'; // Para navegar a la pantalla de login
@@ -45,7 +47,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         setState(() {
           _namesController.text = nombres;
-          _lastNamesController.text = '$apellidoPaterno $apellidoMaterno'.trim();
+          _lastNamesController.text = '$apellidoPaterno $apellidoMaterno'
+              .trim();
           _dniVerified = true;
         });
 
@@ -55,10 +58,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
         }
       } else {
-        _showDialog('Atención', 'No se encontraron datos para el DNI ingresado.');
+        _showDialog(
+          'Atención',
+          'No se encontraron datos para el DNI ingresado.',
+        );
       }
     } catch (e) {
-      _showDialog('Error de Conexión', 'No se pudo consultar el servicio de DNI.');
+      _showDialog(
+        'Error de Conexión',
+        'No se pudo consultar el servicio de DNI.',
+      );
     } finally {
       setState(() => _isLoadingDni = false);
     }
@@ -81,7 +90,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       if (!_isAdult) {
-        _showDialog('Edad Insuficiente', 'Debes ser mayor de 18 años para poder registrarte en Mosca.');
+        _showDialog(
+          'Edad Insuficiente',
+          'Debes ser mayor de 18 años para poder registrarte en Mosca.',
+        );
       }
     }
   }
@@ -115,7 +127,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _submitRegister() {
     if (_formKey.currentState!.validate()) {
       if (!_isAdult) {
-        _showDialog('Registro no permitido', 'Para continuar debes tener al menos 18 años.');
+        _showDialog(
+          'Registro no permitido',
+          'Para continuar debes tener al menos 18 años.',
+        );
         return;
       }
 
@@ -127,7 +142,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Muestra mensaje de confirmación
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('¡Registro exitoso! Por favor inicia sesión con tu DNI y contraseña.'),
+          content: Text(
+            '¡Registro exitoso! Por favor inicia sesión con tu DNI y contraseña.',
+          ),
           backgroundColor: Color(0xFF007A78),
         ),
       );
@@ -142,6 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF007A78);
@@ -162,10 +180,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               const Text(
                 'Crea tu cuenta',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor),
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: primaryColor,
+                ),
               ),
               const SizedBox(height: 6),
-              const Text('Ingresa tu DNI para autocompletar tus nombres y verificar tu identidad.'),
+              const Text(
+                'Ingresa tu DNI para autocompletar tus nombres y verificar tu identidad.',
+              ),
               const SizedBox(height: 24),
 
               // Campo DNI
@@ -173,26 +197,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _dniController,
                 keyboardType: TextInputType.number,
                 maxLength: 8,
-                decoration: InputDecoration(
-                  labelText: 'DNI (Perú)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  counterText: '',
-                  suffixIcon: _isLoadingDni
-                      ? const Padding(
-                          padding: EdgeInsets.all(12.0),
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.search, color: primaryColor),
-                          onPressed: () => _fetchDniInfo(_dniController.text),
-                        ),
-                ),
-                validator: (val) {
-                  if (val == null || val.length != 8) return 'Ingresa un DNI de 8 dígitos';
-                  return null;
+                decoration: const InputDecoration(labelText: 'DNI'),
+                onChanged: (value) {
+                  // Si el usuario modifica el DNI, limpiamos los campos autocompletados para permitir una nueva búsqueda
+                  if (value.length < 8) {
+                    setState(() {
+                      _namesController.clear();
+                      _lastNamesController.clear();
+                      _dniVerified = false;
+                      // Limpia cualquier otra variable o controlador de fecha/edad que tengas
+                    });
+                  } else if (value.length == 8) {
+                    // Aquí se ejecuta tu función que consulta a la API del DNI automáticamente
+                    _fetchDniInfo(value);
+                  }
                 },
-                onChanged: (val) {
-                  if (val.length == 8) _fetchDniInfo(val);
+                validator: (val) {
+                  if (val == null || val.length != 8) {
+                    return 'Ingresa un DNI válido de 8 dígitos';
+                  }
+                  return null;
                 },
               ),
               const SizedBox(height: 16),
@@ -203,7 +227,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 readOnly: _dniVerified,
                 decoration: InputDecoration(
                   labelText: 'Nombres',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 validator: (val) => val!.isEmpty ? 'Campo obligatorio' : null,
               ),
@@ -215,7 +241,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 readOnly: _dniVerified,
                 decoration: InputDecoration(
                   labelText: 'Apellidos',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 validator: (val) => val!.isEmpty ? 'Campo obligatorio' : null,
               ),
@@ -227,15 +255,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: InputDecorator(
                   decoration: InputDecoration(
                     labelText: 'Fecha de Nacimiento',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    suffixIcon: const Icon(Icons.calendar_today, color: primaryColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    suffixIcon: const Icon(
+                      Icons.calendar_today,
+                      color: primaryColor,
+                    ),
                   ),
                   child: Text(
                     _selectedBirthDate == null
                         ? 'Selecciona tu fecha de nacimiento'
                         : '${_selectedBirthDate!.day}/${_selectedBirthDate!.month}/${_selectedBirthDate!.year} (${_calculateAge(_selectedBirthDate!)} años)',
                     style: TextStyle(
-                      color: _selectedBirthDate == null ? Colors.grey[600] : Colors.black,
+                      color: _selectedBirthDate == null
+                          ? Colors.grey[600]
+                          : Colors.black,
                     ),
                   ),
                 ),
@@ -248,9 +283,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
                   labelText: 'Celular (+51)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                validator: (val) => val!.isEmpty ? 'Ingresa tu número celular' : null,
+                validator: (val) =>
+                    val!.isEmpty ? 'Ingresa tu número celular' : null,
               ),
               const SizedBox(height: 16),
 
@@ -260,9 +298,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                validator: (val) => val!.length < 6 ? 'Mínimo 6 caracteres' : null,
+                validator: (val) =>
+                    val!.length < 6 ? 'Mínimo 6 caracteres' : null,
               ),
               const SizedBox(height: 28),
 
@@ -273,10 +314,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _submitRegister,
-                  child: const Text('Registrarse', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: const Text(
+                    'Registrarse',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
               ),
             ],
