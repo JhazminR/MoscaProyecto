@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
 import 'main.dart';
 
@@ -15,29 +16,54 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
   final List<Map<String, dynamic>> _contactos = [];
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  bool _cargandoBot = false;
 
-  // Función para enviar WhatsApp con enlace web personalizado y dinámico
-  Future<void> _enviarWhatsApp(String telefono, String contactoNombre) async {
-    // Aquí puedes reemplazar 'https://tupaginaweb.com/mosca-auth' por tu link real de GitHub Pages o Netlify
-    final String urlBaseWeb = 'https://tupaginaweb.com/mosca-auth';
-    final String enlacePersonalizado = '$urlBaseWeb?de=${Uri.encodeComponent(widget.userName)}&para=${Uri.encodeComponent(contactoNombre)}&tel=$telefono';
+  // Función para ordenar al Bot enviar la autorización por WhatsApp
+  Future<void> _solicitarAutorizacionBot(String telefono, String contactoNombre) async {
+    setState(() => _cargandoBot = true);
 
-    final mensaje = 
-        '🛡️ *MOSCA - Círculo de Seguridad*\n\n'
-        'Hola $contactoNombre, soy ${widget.userName}. Te he añadido a mi círculo de confianza.\n\n'
-        'Para activar los permisos de recepción de alertas y ubicación SOS, por favor ingresa al siguiente enlace y confirma:\n\n'
-        '👉 $enlacePersonalizado';
+    try {
+      // AQUÍ SE CONECTA CON LA API DE TU BOT DE WHATSAPP (ej. Twilio, Meta Cloud API o Baileys)
+      // Por ejemplo:
+      /*
+      final response = await http.post(
+        Uri.parse('https://api.tu-servidor-bot.com/enviar-autorizacion'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'usuario': widget.userName,
+          'contacto_nombre': contactoNombre,
+          'contacto_telefono': '51$telefono',
+        }),
+      );
+      */
 
-    final url = Uri.parse('https://wa.me/51$telefono?text=${Uri.encodeComponent(mensaje)}');
+      // Simulación de envío exitoso desde el Bot
+      await Future.delayed(const Duration(seconds: 1));
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+      setState(() {
+        _contactos.add({
+          'nombre': contactoNombre,
+          'telefono': telefono,
+          'estado': 'Pendiente', // Inicia en Pendiente hasta que responda "SÍ" al Bot
+        });
+      });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir WhatsApp en este dispositivo.')),
+          SnackBar(
+            content: Text('🤖 Bot de Mosca envió la solicitud a $contactoNombre por WhatsApp.'),
+            backgroundColor: const Color(0xFF007A78),
+          ),
         );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al conectar con el Bot de Mosca.')),
+        );
+      }
+    } finally {
+      setState(() => _cargandoBot = false);
     }
   }
 
@@ -59,9 +85,12 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Invita a tu contacto', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Invita a tu persona de confianza', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Se le enviará un mensaje con un enlace web personalizado para que acepte los permisos de seguridad.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const Text(
+              'El Bot Oficial de Mosca le enviará un mensaje por WhatsApp. El contacto solo debe responder "SÍ" para activar el permiso.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _nameController,
@@ -78,29 +107,21 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
-                icon: const Icon(Icons.send, color: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF007A78)),
+                icon: const Icon(Icons.smart_toy_outlined, color: Colors.white),
                 onPressed: () {
                   if (_nameController.text.isNotEmpty && _phoneController.text.isNotEmpty) {
                     final String nombre = _nameController.text;
                     final String telefono = _phoneController.text;
 
-                    setState(() {
-                      _contactos.add({
-                        'nombre': nombre,
-                        'telefono': telefono,
-                        'estado': 'Pendiente', // Inicia en pendiente hasta que el enlace responda
-                      });
-                    });
-
-                    _enviarWhatsApp(telefono, nombre);
+                    _solicitarAutorizacionBot(telefono, nombre);
 
                     _nameController.clear();
                     _phoneController.clear();
                     Navigator.pop(context);
                   }
                 },
-                label: const Text('Enviar Enlace por WhatsApp', style: TextStyle(color: Colors.white)),
+                label: const Text('Enviar Solicitud con Bot Mosca', style: TextStyle(color: Colors.white)),
               ),
             ),
           ],
@@ -109,15 +130,15 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
     );
   }
 
-  // Simulación interactiva del enlace web cuando el usuario pulsa el contacto
-  void _verificarEnlaceWeb(int index) {
+  // Simulación de la recepción del "SÍ" del familiar para pruebas en el prototipo
+  void _simularRespuestaBot(int index) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Verificar Enlace: ${_contactos[index]['nombre']}'),
-        content: const Text(
-          'El contacto ha recibido su enlace web personalizado.\n\n'
-          '¿Deseas confirmar que la persona abrió el enlace y pulsó "Aceptar Permisos"?',
+        title: Text('Respuesta del Bot: ${_contactos[index]['nombre']}'),
+        content: Text(
+          'El Bot de Mosca recibió una respuesta por WhatsApp de ${_contactos[index]['nombre']}.\n\n'
+          '¿Deseas simular que el contacto respondió "SÍ" al mensaje del Bot?',
         ),
         actions: [
           TextButton(
@@ -125,14 +146,14 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF007A78)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
             onPressed: () {
               setState(() {
                 _contactos[index]['estado'] = 'Aceptó';
               });
               Navigator.pop(ctx);
             },
-            child: const Text('Confirmar Aceptación', style: TextStyle(color: Colors.white)),
+            child: const Text('Simular respuesta "SÍ"', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -157,7 +178,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Permiso de Ubicación Necesario'),
-            content: const Text('Mosca necesita acceso a tu ubicación para compartir coordenadas con tu círculo de confianza.'),
+            content: const Text('Mosca necesita acceso a tu ubicación para compartir coordenadas con tu círculo en emergencias.'),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido')),
             ],
@@ -197,7 +218,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
                 children: [
                   Text('Hola, ${widget.userName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
                   const SizedBox(height: 6),
-                  const Text('Comparte el enlace web de autorización con tus contactos de confianza.', style: TextStyle(fontSize: 13)),
+                  const Text('El Bot de Mosca se encargará de pedir la autorización por WhatsApp a tus contactos.', style: TextStyle(fontSize: 13)),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -207,8 +228,10 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
                         backgroundColor: primaryColor,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: _agregarContactoModal,
-                      child: const Text('Agregar nuevo contacto', style: TextStyle(color: Colors.white, fontSize: 15)),
+                      onPressed: _cargandoBot ? null : _agregarContactoModal,
+                      child: _cargandoBot
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Agregar contacto con Bot', style: TextStyle(color: Colors.white, fontSize: 15)),
                     ),
                   ),
                 ],
@@ -216,7 +239,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
             ),
             const SizedBox(height: 24),
 
-            Text('Contactos agregados (${_contactos.length} de 5)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Tus contactos (${_contactos.length} de 5)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 12),
 
             _contactos.isEmpty
@@ -228,7 +251,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
-                    child: const Text('Aún no hay contactos agregados.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    child: const Text('Aún no has enviado solicitudes con el Bot.', style: TextStyle(color: Colors.grey, fontSize: 12)),
                   )
                 : ListView.builder(
                     shrinkWrap: true,
@@ -239,7 +262,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
                       final bool esAceptado = c['estado'] == 'Aceptó';
 
                       return InkWell(
-                        onTap: () => _verificarEnlaceWeb(index),
+                        onTap: () => _simularRespuestaBot(index),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
@@ -301,7 +324,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
                 ),
                 onPressed: aceptadosCount == 0 ? null : _solicitarPermisosYContinuar,
                 child: Text(
-                  aceptadosCount == 0 ? 'Esperando aceptación del enlace web...' : 'Activar mi círculo e ingresar',
+                  aceptadosCount == 0 ? 'Esperando respuesta "SÍ" en el Bot...' : 'Activar mi círculo e ingresar',
                   style: const TextStyle(color: Colors.white, fontSize: 15),
                 ),
               ),
