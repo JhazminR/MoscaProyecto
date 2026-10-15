@@ -4,7 +4,8 @@ import 'registro.dart'; // Redirección al registro
 import 'circulo_config.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String registeredName;
+  const LoginScreen({super.key, this.registeredName = 'Usuario'});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -17,17 +18,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
-   Navigator.pushReplacement(
+      // Usamos el nombre registrado si está disponible; si no, usamos un genérico o el texto del DNI
+      final String nombreParaMostrar = widget.registeredName != 'Usuario' 
+          ? widget.registeredName 
+          : 'Usuario';
+          
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => CirculoConfigScreen(
-            userName: _dniController.text.isNotEmpty ? _dniController.text : 'Usuario',
+            userName: nombreParaMostrar,
           ),
         ),
       );
     }
   }
-
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF007A78);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'main.dart';
 
 class CirculoConfigScreen extends StatefulWidget {
@@ -13,6 +14,22 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
   final List<Map<String, dynamic>> _contactos = [];
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+
+  // NUEVO: Función para abrir WhatsApp con el mensaje preconfigurado
+  Future<void> _enviarWhatsApp(String telefono, String contactoNombre) async {
+    final mensaje = 'Hola $contactoNombre, soy ${widget.userName}. Te sumo a mi círculo de confianza en Mosca para que recibas mis alertas y ubicación SOS si necesito ayuda.';
+    final url = Uri.parse('https://wa.me/51$telefono?text=${Uri.encodeComponent(mensaje)}');
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+        );
+      }
+    }
+  }
 
   void _agregarContactoModal() {
     showModalBottomSheet(
@@ -50,23 +67,31 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
             SizedBox(
               width: double.infinity,
               height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF007A78)),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)), // Color verde WhatsApp
+                icon: const Icon(Icons.send, color: Colors.white),
                 onPressed: () {
-                  if (_nameController.text.isNotEmpty) {
+                  if (_nameController.text.isNotEmpty && _phoneController.text.isNotEmpty) {
+                    final String nombre = _nameController.text;
+                    final String telefono = _phoneController.text;
+
                     setState(() {
                       _contactos.add({
-                        'nombre': _nameController.text,
-                        'telefono': _phoneController.text,
-                        'estado': 'Aceptó', // Simulado tras el envío del Bot
+                        'nombre': nombre,
+                        'telefono': telefono,
+                        'estado': 'Aceptó',
                       });
                     });
+
+                    // MODIFICACIÓN: Dispara la apertura de WhatsApp
+                    _enviarWhatsApp(telefono, nombre);
+
                     _nameController.clear();
                     _phoneController.clear();
                     Navigator.pop(context);
                   }
                 },
-                child: const Text('Enviar invitación por WhatsApp', style: TextStyle(color: Colors.white)),
+                label: const Text('Enviar invitación por WhatsApp', style: TextStyle(color: Colors.white)),
               ),
             ),
           ],
@@ -113,7 +138,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Siempre cerca.', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                  Text('Hola, ${widget.userName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
                   const SizedBox(height: 6),
                   const Text('No estás sola. Estamos en tu círculo.', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
@@ -208,7 +233,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Botón para pasar al Mapa Principal
+            // Botón para pasar al Panel Principal
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -225,7 +250,7 @@ class _CirculoConfigScreenState extends State<CirculoConfigScreen> {
                           MaterialPageRoute(builder: (context) => HomeScreen(userName: widget.userName)),
                         );
                       },
-                child: const Text('Activar mapa y compartir ubicación', style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: const Text('Activar contactos y continuar', style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),
           ],
@@ -246,7 +271,7 @@ class AsistenteBotSheet extends StatefulWidget {
 }
 
 class _AsistenteBotSheetState extends State<AsistenteBotSheet> {
-  String _estadoActual = "Asistente IA: ¿Cómo estás Lucía? Se activó una alerta SOS.";
+  String _estadoActual = "Asistente IA: ¿Cómo estás? Se activó una alerta SOS.";
 
   void _responderOpcion(int opcion) {
     setState(() {

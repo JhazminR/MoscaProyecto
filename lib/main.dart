@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'login.dart';
 
 void main() {
@@ -28,37 +29,54 @@ class MoscaApp extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// PANTALLA PRINCIPAL (MAPA, ALERTAS Y BOTÓN SOS DE MOSCA)
+// PANTALLA PRINCIPAL (CONTACTOS DE EMERGENCIA RÁPIDA DE TRUJILLO)
 // -----------------------------------------------------------------------------
 class HomeScreen extends StatelessWidget {
   final String userName;
 
   const HomeScreen({super.key, required this.userName});
 
+  // Función para realizar la llamada telefónica directa
+  Future<void> _hacerLlamada(String numero) async {
+    final Uri url = Uri(scheme: 'tel', path: numero);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF007A78);
 
+    // Lista de contactos de emergencia solicitados
+    final List<Map<String, String>> emergencias = [
+      {'nombre': 'Bomberos', 'numero': '116', 'sub': 'Emergencias e incendios'},
+      {'nombre': 'Seguridad Ciudadana', 'numero': '044298734', 'sub': 'Serenazgo Trujillo'},
+      {'nombre': 'Policía Nacional del Perú', 'numero': '105', 'sub': 'Emergencias policiales'},
+      {'nombre': 'SAMU', 'numero': '106', 'sub': 'Atención médica de urgencia'},
+    ];
+
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            // Cabecera con Nombre de Usuario
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-              child: Row(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabecera con Nombre de Usuario y Ubicación
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'PALERMO · BUENOS AIRES',
+                        'TRUJILLO · PERÚ',
                         style: TextStyle(fontSize: 11, color: primaryColor, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Hola, $userName',
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -71,148 +89,76 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
 
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.near_me, size: 14, color: primaryColor),
-                        SizedBox(width: 4),
-                        Text('Ubicación actualizada al abrir · 9:41', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+              const Text(
+                'Contactos de Emergencia Rápida',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Presiona el botón de llamar para comunicarte de inmediato:',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
 
-                    // Mapa Simulado de Seguridad
-                    Container(
-                      height: 220,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5EFEA),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Positioned(
-                            top: 20,
-                            left: 30,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD1FAE5),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Text('Riesgo bajo', style: TextStyle(fontSize: 10, color: Color(0xFF047857))),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: primaryColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const CircleAvatar(radius: 4, backgroundColor: Colors.lightGreenAccent),
-                                const SizedBox(width: 6),
-                                Text('Tú · $userName', style: const TextStyle(color: Colors.white, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Círculo de confianza
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE6F4F1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.shield_outlined, color: primaryColor),
-                          SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Compartiendo con Mariana y Diego', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              Text('2 autorizados · Gestionar círculo →', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Reportes comunitarios y Botón SOS
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.directions_car, color: Colors.orange, size: 18),
-                                    SizedBox(width: 6),
-                                    Text('Vehículo sospechoso', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                  ],
-                                ),
-                                SizedBox(height: 4),
-                                Text('Juncal y Salguero · hace 3 min', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Botón flotante SOS
-                        Container(
-                          width: 90,
-                          height: 90,
+              // Lista de emergencias
+              Expanded(
+                child: ListView.builder(
+                  itemCount: emergencias.length,
+                  itemBuilder: (context, index) {
+                    final e = emergencias[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                      color: Colors.white,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFEF4444).withOpacity(0.4),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            color: const Color(0xFFE6F4F1),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.notifications_active, color: Colors.white, size: 28),
-                              SizedBox(height: 2),
-                              Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            ],
-                          ),
+                          child: const Icon(Icons.phone_in_talk, color: primaryColor),
                         ),
-                      ],
-                    ),
-                  ],
+                        title: Text(e['nombre']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text('${e['sub']} (${e['numero']})', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        trailing: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () => _hacerLlamada(e['numero']!),
+                          child: const Text('Llamar', style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            ),
-          ],
+
+              // Botón de Alerta SOS General
+              Container(
+                width: double.infinity,
+                height: 56,
+                margin: const EdgeInsets.only(top: 8),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF4444),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () => _hacerLlamada('105'),
+                  icon: const Icon(Icons.warning, color: Colors.white),
+                  label: const Text(
+                    'ALERTA SOS (LLAMAR 105)',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
 

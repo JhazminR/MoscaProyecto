@@ -119,22 +119,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      // Muestra mensaje de confirmación
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('¡Registro exitoso! Por favor inicia sesión con tu DNI y contraseña.'),
-        backgroundColor: Color(0xFF007A78),
-      ),
-    );
+      // Extraemos el primer nombre escrito o autocompletado en el campo de nombres
+      final String primerNombre = _namesController.text.trim().isNotEmpty
+          ? _namesController.text.trim().split(' ')[0]
+          : 'Usuario';
 
-    // Redirige a la pantalla de Login limpiando el historial de navegación
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
+      // Muestra mensaje de confirmación
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Registro exitoso! Por favor inicia sesión con tu DNI y contraseña.'),
+          backgroundColor: Color(0xFF007A78),
+        ),
+      );
+
+      // Redirige a la pantalla de Login enviando el nombre registrado
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(registeredName: primerNombre),
+        ),
+        (route) => false,
+      );
+    }
   }
-}
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF007A78);
